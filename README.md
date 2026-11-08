@@ -1,54 +1,38 @@
+# Telas Fitness — React Native + Expo
 
+Projeto independente com as duas telas iniciais das referências:
+- Aluno — Início
+- Instrutor — Início
 
-<!--
-**caylanne/caylanne** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+## Requisitos
+- Node.js instalado
+- Expo Go no celular (ou emulador Android)
 
-Here are some ideas to get you started:
+## Como executar
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
---> 
-<h2 align="left">Hi 👋! My name is Caylanne...</h2>
+1. Extraia o ZIP e abra a pasta `telas_fitness_expo` no VS Code.
+2. No terminal, execute:
 
-###
+```bash
+npm install
+npx expo install @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context @expo/vector-icons
+npx expo start
+```
 
-<div align="center">
-  <img src="https://streak-stats.demolab.com?user=caylanne&locale=en&mode=daily&theme=dracula&hide_border=false&border_radius=5" height="150" alt="streak graph"  />
-</div>
+3. Leia o QR Code com o Expo Go ou pressione `a` para abrir no emulador Android.
 
-###
+## Navegação de demonstração
+O projeto inicia na tela do aluno. Toque no círculo com as iniciais `NA` para abrir a tela do instrutor. Na tela do instrutor, toque em `PM` para voltar à tela do aluno.
 
-<br clear="both">
+Essa troca de perfil é apenas um atalho para testar as duas rotas. Na integração final, a equipe pode ligar essas rotas ao fluxo de login/perfil do projeto principal.
 
-<img align="right" height="150" src=""  />
+## Componentes reutilizáveis
+- `Card.js`
+- `BottomMenu.js`
+- `SectionTitle.js`
+- `StatCard.js`
 
-###
+## Integração com o projeto da equipe
+Copie a pasta `src` para o projeto principal e registre as telas `AlunoInicio` e `InstrutorInicio` no navegador já existente. Se o projeto principal já tiver `NavigationContainer`, **não crie outro**: adicione somente as rotas ao navegador existente.
 
-<div align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" height="30" alt="javascript logo"  />
-  <img width="12" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" height="30" alt="python logo"  />
-</div>
-
-###
-
-<div align="center">
-  <img src="https://img.shields.io/static/v1?message=Instagram&logo=instagram&label=&color=E4405F&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="instagram logo"  />
-  <img src="https://img.shields.io/static/v1?message=Discord&logo=discord&label=&color=7289DA&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="discord logo"  />
-  <img src="https://img.shields.io/static/v1?message=LinkedIn&logo=linkedin&label=&color=0077B5&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="linkedin logo"  />
-</div>
-
-###
-
-<br clear="both">
-
-<img src="https://raw.githubusercontent.com/caylanne/caylanne/output/snake.svg" alt="Snake animation" />
-
-###
-
+Os dados exibidos (nomes, datas, frequência e estatísticas) são exemplos estáticos para reproduzir o layout. O botão de iniciar treino e o botão de criar/editar treino são demonstrações, sem backend.
