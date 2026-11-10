@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -35,7 +34,7 @@ const workouts = [
     duration: 'cerca de 50 min',
     items: [
       { name: 'Supino reto', sets: '4 séries', reps: '10-12 reps', load: '40 kg' },
-      { name: 'Crucifixo no cabo', sets: '3 séries', reps: '12 reps', load: '14 kg' },
+      { name: 'Crucifixo', sets: '3 séries', reps: '12 reps', load: '14 kg' },
       { name: 'Supino inclinado', sets: '3 séries', reps: '10 reps', load: '30 kg' },
       { name: 'Tríceps corda', sets: '4 séries', reps: '12 reps', load: '25 kg' },
       { name: 'Tríceps testa', sets: '3 séries', reps: '12 reps', load: '15 kg' },
@@ -94,6 +93,8 @@ export default function AlunoInicio({ navigation }) {
   const [now, setNow] = useState(Date.now());
   const [completedExercises, setCompletedExercises] = useState([]);
   const [weekProgress, setWeekProgress] = useState(week);
+  const [confirmingFinish, setConfirmingFinish] = useState(false);
+  const [summary, setSummary] = useState(null);
 
   // Atualiza o relógio enquanto o treino estiver ativo
   useEffect(() => {
@@ -128,9 +129,7 @@ export default function AlunoInicio({ navigation }) {
     ].join(':');
   }
 
-  // Iniciar treino
-  // Abre a pré-visualização
-  // Inicia o treino diretamente no pop-up
+  // Iniciar treino: abre o pop-up e já inicia o cronômetro
   function startWorkout(workout) {
     setActiveWorkout(workout);
     setCompletedExercises([]);
@@ -165,81 +164,51 @@ export default function AlunoInicio({ navigation }) {
     setWorkoutStatus('running');
   }
 
-  // Confirmação e finalização
-  function finishWorkout() {
-    Alert.alert(
-      'Finalizar treino?',
-      'Deseja realmente finalizar o treino e registrar este dia como concluído?',
-      [
-        {
-          text: 'Continuar treinando',
-          style: 'cancel',
-        },
-        {
-          text: 'Finalizar',
-          onPress: () => {
-            const finalTime = currentElapsed;
-            const finishedWorkout = activeWorkout;
-
-            // Marca o dia atual na semana (segunda a domingo)
-            const today = new Date().getDay();
-            const weekIndex = today === 0 ? 6 : today - 1;
-
-            setWeekProgress((previous) =>
-              previous.map((item, index) =>
-                index === weekIndex
-                  ? { ...item, done: true }
-                  : item
-              )
-            );
-
-            setWorkoutStatus('idle');
-            setActiveWorkout(null);
-            setElapsedMs(0);
-            setStartedAt(null);
-            setCompletedExercises([]);
-
-            Alert.alert(
-              'Treino concluído! 🎉',
-              `Parabéns! Você concluiu ${finishedWorkout.name}.\n\n` +
-              `Exercícios realizados: ${completedExercises.length}/${finishedWorkout.items.length}\n` +
-              `Tempo total: ${formatTime(finalTime)}\n\n` +
-              'Seu dia foi marcado como concluído na frequência semanal.'
-            );
-          },
-        },
-      ]
-    );
+  // Abre a confirmação (dentro do próprio pop-up)
+  function requestFinish() {
+    setConfirmingFinish(true);
   }
 
-  // Pausar treino
-  function pauseWorkout() {
-    setElapsedMs(currentElapsed);
-    setStartedAt(null);
-    setWorkoutStatus('paused');
+  // Cancela a confirmação e continua treinando
+  function cancelFinish() {
+    setConfirmingFinish(false);
   }
 
-  // Retomar treino
-  function resumeWorkout() {
-    setStartedAt(Date.now());
-    setNow(Date.now());
-    setWorkoutStatus('running');
-  }
-
-  // Finalizar treino
-  function finishWorkout() {
+  // Confirma: registra o dia, guarda o resumo e encerra o treino
+  function confirmFinish() {
     const finalTime = currentElapsed;
     const finishedWorkout = activeWorkout;
 
+    // Marca o dia atual na semana (segunda a domingo)
+    const today = new Date().getDay();
+    const weekIndex = today === 0 ? 6 : today - 1;
+
+    setWeekProgress((previous) =>
+      previous.map((item, index) =>
+        index === weekIndex
+          ? { ...item, done: true }
+          : item
+      )
+    );
+
+    setSummary({
+      name: finishedWorkout.name,
+      done: completedExercises.length,
+      total: finishedWorkout.items.length,
+      time: formatTime(finalTime),
+    });
+
+    setConfirmingFinish(false);
     setWorkoutStatus('idle');
     setActiveWorkout(null);
     setElapsedMs(0);
     setStartedAt(null);
+    setCompletedExercises([]);
+  }
 
-    Alert.alert(
-      'Treino finalizado!',
-      `Parabéns! Você concluiu ${finishedWorkout.name}.\n\nTempo total: ${formatTime(finalTime)}`
-    );
+  // Fecha o resumo final
+  function closeSummary() {
+    setSummary(null);
   }
 
   return (
@@ -323,7 +292,7 @@ export default function AlunoInicio({ navigation }) {
 
             <Card style={styles.frequencyCard}>
               <View style={styles.weekRow}>
-                {week.map((item, index) => (
+                {weekProgress.map((item, index) => (
                   <View key={index} style={styles.dayColumn}>
                     <View
                       style={[
@@ -375,15 +344,48 @@ export default function AlunoInicio({ navigation }) {
 
       </View>
 
-
       {/* POP-UP ÚNICO: EXERCÍCIOS + CRONÔMETRO */}
       <Modal
-        visible={!!activeWorkout}
+        visible={!!activeWorkout || !!summary}
         transparent
         animationType="slide"
         onRequestClose={() => { }}
       >
         <View style={styles.modalOverlay}>
+          {summary ? (
+            <View style={styles.modalCard}>
+              <View style={styles.modalIcon}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={25}
+                  color={colors.teal}
+                />
+              </View>
+
+              <Text style={styles.modalLabel}>TREINO CONCLUÍDO</Text>
+
+              <Text style={styles.modalWorkoutName}>
+                {summary.name}
+              </Text>
+
+              <Text style={styles.summaryText}>
+                Exercícios realizados: {summary.done}/{summary.total}
+              </Text>
+              <Text style={styles.summaryText}>
+                Tempo total: {summary.time}
+              </Text>
+              <Text style={styles.summaryNote}>
+                Seu dia foi marcado como concluído na frequência semanal.
+              </Text>
+
+              <Pressable
+                style={[styles.resumeButton, styles.summaryButton]}
+                onPress={closeSummary}
+              >
+                <Text style={styles.resumeButtonText}>Fechar</Text>
+              </Pressable>
+            </View>
+          ) : (
           <View style={styles.modalCard}>
 
             <View style={styles.modalIcon}>
@@ -537,7 +539,7 @@ export default function AlunoInicio({ navigation }) {
             {/* FINALIZAR */}
             <Pressable
               style={styles.finishButton}
-              onPress={finishWorkout}
+              onPress={requestFinish}
             >
               <Ionicons
                 name="checkmark-circle-outline"
@@ -550,7 +552,39 @@ export default function AlunoInicio({ navigation }) {
               </Text>
             </Pressable>
 
+            {/* CONFIRMAÇÃO DE FINALIZAÇÃO */}
+            {confirmingFinish && (
+              <View style={styles.confirmOverlay}>
+                <Text style={styles.confirmTitle}>
+                  Finalizar treino?
+                </Text>
+
+                <Text style={styles.confirmText}>
+                  Deseja realmente finalizar o treino e registrar este dia como concluído?
+                </Text>
+
+                <Pressable
+                  style={styles.resumeButton}
+                  onPress={cancelFinish}
+                >
+                  <Text style={styles.resumeButtonText}>
+                    Continuar treinando
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.finishButton}
+                  onPress={confirmFinish}
+                >
+                  <Text style={styles.modalButtonText}>
+                    Finalizar
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
           </View>
+          )}
         </View>
       </Modal>
 
@@ -571,7 +605,7 @@ const styles = StyleSheet.create({
     maxWidth: 390,
     backgroundColor: colors.background,
     borderRadius: 29,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
 
   content: {
@@ -831,120 +865,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  previewCard: {
-    width: '100%',
-    maxWidth: 390,
-    maxHeight: '85%',
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 20,
-  },
-
-  previewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-
-  closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#292E35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  exerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 25,
-    marginBottom: 12,
-  },
-
-  exerciseHeaderText: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  exerciseCount: {
-    color: colors.orange,
-    fontSize: 10,
-  },
-
-  exerciseList: {
-    flexGrow: 0,
-    flexShrink: 1,
-  },
-
-  exerciseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 13,
-    padding: 12,
-    marginBottom: 9,
-    gap: 11,
-  },
-
-  exerciseNumber: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    backgroundColor: '#343941',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  exerciseNumberText: {
-    color: colors.orange,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  exerciseInfo: {
-    flex: 1,
-  },
-
-  exerciseName: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  exerciseDetails: {
-    color: colors.muted,
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  exerciseLoad: {
-    color: colors.teal,
-    fontSize: 10,
-    marginTop: 3,
-  },
-
-  previewFooter: {
-    paddingTop: 12,
-  },
-
-  cancelButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    marginTop: 3,
-  },
-
-  cancelButtonText: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
 
   exerciseHeader: {
     width: '100%',
@@ -985,6 +905,28 @@ const styles = StyleSheet.create({
     gap: 11,
   },
 
+  exerciseInfo: {
+    flex: 1,
+  },
+
+  exerciseName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  exerciseDetails: {
+    color: colors.muted,
+    fontSize: 10,
+    marginTop: 4,
+  },
+
+  exerciseLoad: {
+    color: colors.teal,
+    fontSize: 10,
+    marginTop: 3,
+  },
+
   exerciseCompleted: {
     borderWidth: 1,
     borderColor: colors.teal,
@@ -1011,4 +953,45 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
 
+  // CONFIRMAÇÃO E RESUMO
+  confirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+
+  confirmTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  confirmText: {
+    color: colors.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
+  summaryText: {
+    color: colors.text,
+    fontSize: 14,
+    marginTop: 10,
+  },
+
+  summaryNote: {
+    color: colors.muted,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 14,
+  },
+
+  summaryButton: {
+    marginTop: 22,
+  },
 });
